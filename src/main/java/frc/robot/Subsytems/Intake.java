@@ -107,7 +107,8 @@ public class Intake extends SubsystemBase {
 
     /**
      * we need to put a state manager here that checks what's going on and decides
-     * what needs to happen
+     * what needs to happen.
+     * @note this is based off of this diagram -> https://1drv.ms/i/s!Arw5U1s-Uu3urMh4LfIXB9X2JBatFQ?e=Mmr1gy
      */
 
     switch (desiredAction) {
@@ -130,7 +131,7 @@ public class Intake extends SubsystemBase {
       case holding:
         break;
       case nothing:
-        this.run(null);
+        this.run(null); // this should deschedule all commands for the subsytem
         break;
       case outTaking:
         outtake().schedule();
