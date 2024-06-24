@@ -131,7 +131,7 @@ public class Intake extends SubsystemBase {
       case holding:
         break;
       case nothing:
-        this.run(null); // this should deschedule all commands for the subsytem
+        this.getCurrentCommand().cancel();
         break;
       case outTaking:
         outtake().schedule();
