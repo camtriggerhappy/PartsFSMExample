@@ -21,7 +21,7 @@ public class Shooter extends SubsystemBase {
     notready
   }
 
-  public enum desiredAction{
+  public enum DesiredAction{
     shoot,
     nothing;
   }
@@ -29,6 +29,7 @@ public class Shooter extends SubsystemBase {
   static Shooter mShooter = new Shooter();
   public double previousRPM = 0;
   CANSparkMax shooterMotor = new CANSparkMax(1, MotorType.kBrushless);
+  private DesiredAction desiredAction = DesiredAction.nothing;
   /** Creates a new Shooter. */
   public Shooter() {}
 
@@ -63,5 +64,17 @@ public class Shooter extends SubsystemBase {
   @Override
   public void periodic() {
     getAcceleration(); // this needs to be updated constantly since it relies on the change in time being constant
+    switch (desiredAction) {
+      case nothing:
+      this.getCurrentCommand().cancel();
+      case shoot:
+        break;
+    }
+  }
+
+
+  public void setAction(DesiredAction newDesire) {
+    desiredAction = newDesire;
+    
   }
 }
