@@ -7,14 +7,23 @@ package frc.robot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Subsytems.Intake;
+import frc.robot.Subsytems.Shooter;
 import frc.robot.Subsytems.Intake.DesiredAction;
 
 public class RobotContainer {
   CommandXboxController driverController = new CommandXboxController(0);
   CommandXboxController operator = new CommandXboxController(1);
   Intake intake = Intake.getInstance();
+
+  public Command shoot(){
+    return new ParallelCommandGroup(
+      new InstantCommand(() -> Intake.getInstance().setAction(DesiredAction.Shooting)),
+      new InstantCommand(() -> Shooter.getInstance().setAction(frc.robot.Subsytems.Shooter.DesiredAction.shoot))
+    );
+  }
 
   public RobotContainer() {
     configureBindings();
