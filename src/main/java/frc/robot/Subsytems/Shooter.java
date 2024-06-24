@@ -9,6 +9,8 @@ import java.util.function.DoubleSupplier;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.controller.BangBangController;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Shooter extends SubsystemBase {
@@ -29,6 +31,7 @@ public class Shooter extends SubsystemBase {
   static Shooter mShooter = new Shooter();
   public double previousRPM = 0;
   CANSparkMax shooterMotor = new CANSparkMax(1, MotorType.kBrushless);
+  BangBangController mBangBangController = new BangBangController(100);// +- 100RPM should be ok;
   private DesiredAction desiredAction = DesiredAction.nothing;
   /** Creates a new Shooter. */
   public Shooter() {}
@@ -52,6 +55,16 @@ public class Shooter extends SubsystemBase {
     return () -> getAcceleration();
   }
 
+  public Command shoot(double goalRPM){
+
+    return this.run(() -> {
+      shooterMotor.set(mBangBangController.calculate(desiredVelocity, goalRPM));
+    }
+    );
+    
+
+  }
+
   public boolean isStuck(){
     //if its barely spinning,  not getting faster, pulling a good amount of power, and trying to move its probably stuck;
     if((Math.abs(shooterMotor.getEncoder().getVelocity()) < 100) && 
@@ -68,7 +81,8 @@ public class Shooter extends SubsystemBase {
       case nothing:
       this.getCurrentCommand().cancel();
       case shoot:
-        break;
+      shoot(3600).schedule();
+      break;
     }
   }
 
