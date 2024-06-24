@@ -4,6 +4,8 @@
 
 package frc.robot.Subsytems;
 
+import java.util.function.BooleanSupplier;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
@@ -24,6 +26,8 @@ public class Intake extends SubsystemBase {
   DesiredAction desiredAction = DesiredAction.nothing;
   CANSparkMax intakeMotor = new CANSparkMax(0, MotorType.kBrushless);
 
+  private static Intake mintake = new Intake();
+
   public enum IntakeStates { // these states represent whether the Intake already has something in it or not
     Unloaded,
     Loaded,
@@ -43,8 +47,17 @@ public class Intake extends SubsystemBase {
 
   }
 
+  public static Intake getInstance() {
+    return mintake;
+  }
+
   public boolean hasNote() {
     return noteDebouncer.calculate(noteDetector.get());
+  }
+
+  public BooleanSupplier hasNoteSupplier() {
+    BooleanSupplier s = () -> hasNote();
+    return s;
   }
 
   public Command pickup() {
@@ -62,6 +75,11 @@ public class Intake extends SubsystemBase {
         () -> intakeMotor.set(-1));
   }
 
+  public Command unstickShooter() {
+    return this.run(// use this. so that the command will require the intake subsystem
+        () -> intakeMotor.set(-1)).withTimeout(.080).andThen(hold());// this is roughly 4 rioloops
+  }
+
   /**
    * 
    * This command applies a small motor power to secure the note in the intake
@@ -69,6 +87,11 @@ public class Intake extends SubsystemBase {
   public Command hold() {
     return this.run(// use this. so that the command will require the intake subsystem
         () -> intakeMotor.set(.01));
+  }
+
+  public void setAction(DesiredAction desired) {
+    desiredAction = desired;
+
   }
 
   @Override
@@ -86,29 +109,32 @@ public class Intake extends SubsystemBase {
      * we need to put a state manager here that checks what's going on and decides
      * what needs to happen
      */
+
     switch (desiredAction) {
       case Intaking:
-        if (currentState == IntakeStates.Loaded) {
-          this.hold();
-        } else if (currentState == IntakeStates.Unloaded) {
-          this.pickup();
+        if (hasNote()) {
+          desiredAction = DesiredAction.holding;
+        } else {
+          pickup().schedule();
         }
         break;
       case Shooting:
-        If(Shooter.isReady()){
-          this.pickup();
+        if (Shooter.getInstance().isReady()) {
+          pickup().schedule();
+        } else if (Shooter.getInstance().isStuck()) {
+          // maybe backup the note bc it could be blocking the wheels? you could add
+          // current detection to see if the motors are drawing power and not spinning.
+          unstickShooter().schedule();
         }
         break;
-        case outTaking:
-          this.outtake();
+      case holding:
         break;
-        case holding:
-          this.hold();
+      case nothing:
+        this.run(null);
         break;
-
-
-
+      case outTaking:
+        outtake().schedule();
+        break;
     }
-
   }
 }
