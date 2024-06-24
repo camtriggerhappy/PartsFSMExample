@@ -4,6 +4,8 @@
 
 package frc.robot.Subsytems;
 
+import java.util.function.DoubleSupplier;
+
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
@@ -11,6 +13,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Shooter extends SubsystemBase {
 
+
+  
   private double desiredVelocity = 3200; // RPM
   public enum ShooterStates{
     ready,
@@ -22,6 +26,8 @@ public class Shooter extends SubsystemBase {
     nothing;
   }
 
+  static Shooter mShooter = new Shooter();
+  public double previousRPM = 0;
   CANSparkMax shooterMotor = new CANSparkMax(1, MotorType.kBrushless);
   /** Creates a new Shooter. */
   public Shooter() {}
@@ -31,10 +37,31 @@ public class Shooter extends SubsystemBase {
     return shooterMotor.getEncoder().getVelocity() >  desiredVelocity;
   }
 
+  public static Shooter getInstance(){
+    return mShooter;
+  }
+
+  public double getAcceleration(){
+    double currentRPMPM = (shooterMotor.getEncoder().getVelocity() - previousRPM)/(.020 * 60); // .020 * 60 gives the number of minutes since the last nominal loop
+    previousRPM = shooterMotor.getEncoder().getVelocity();
+    return currentRPMPM;
+  }
+
+  public DoubleSupplier accelerationSupplier(){
+    return () -> getAcceleration();
+  }
+
+  public boolean isStuck(){
+    //if its barely spinning,  not getting faster, pulling a good amount of power, and trying to move its probably stuck;
+    if((Math.abs(shooterMotor.getEncoder().getVelocity()) < 100) && 
+    (Math.abs(shooterMotor.getOutputCurrent()) > 4) && (Math.abs(getAcceleration()) > 30) && (shooterMotor.getAppliedOutput() > .03)){
+      return true; 
+    }
+    return false;
+  }
+
   @Override
   public void periodic() {
-    //TODO: add settign the state ready or not
-
-    // This method will be called once per scheduler run
+    getAcceleration(); // this needs to be updated constantly since it relies on the change in time being constant
   }
 }
